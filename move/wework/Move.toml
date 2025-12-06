@@ -1,0 +1,8 @@
+[package]
+name = "wework"
+edition = "2024.beta"
+
+[dependencies]
+
+[addresses]
+wework = "0x20b2028bdcd874aa993367ab39253d9af14916c1d8e60fb1082a8ca44437656d"
