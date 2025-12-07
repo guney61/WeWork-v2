@@ -14,6 +14,21 @@ export interface Application {
     status: 'pending' | 'accepted' | 'rejected';
     badgeTier?: 'bronze' | 'silver' | 'gold' | 'diamond';
     badgeScore?: number;
+    // AI Analysis for employer visibility
+    aiAnalysis?: {
+        tier: 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
+        developerType?: string;
+        developerTypeEmoji?: string;
+        languages?: { name: string; percentage: number }[];
+        strengths?: string[];
+        reasoning?: string;
+        detailedAnalysis?: {
+            codeQuality: number;
+            activityLevel: number;
+            communityImpact: number;
+            projectDiversity: number;
+        };
+    };
 }
 
 interface ApplicationStore {

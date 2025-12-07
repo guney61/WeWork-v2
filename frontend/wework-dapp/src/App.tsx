@@ -77,6 +77,7 @@ function App() {
     username: string;
     score: ScoreBreakdown;
     avatarUrl: string;
+    aiAnalysis?: any; // AI analysis data
   } | null>(null);
 
   // Load saved data and check URL params on mount
@@ -111,12 +112,14 @@ function App() {
     score: ScoreBreakdown;
     avatarUrl: string;
     accessToken: string;
+    aiAnalysis?: any;
   }) => {
-    // Save to state and localStorage
+    // Save to state and localStorage (including AI analysis)
     const saveData = {
       username: data.username,
       score: data.score,
       avatarUrl: data.avatarUrl,
+      aiAnalysis: data.aiAnalysis, // Include AI analysis
     };
     setGithubData(saveData);
     localStorage.setItem('wework_github_data', JSON.stringify(saveData));

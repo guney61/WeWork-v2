@@ -1,7 +1,13 @@
-import { useState } from "react";
-import { useCurrentAccount } from "@mysten/dapp-kit";
-import { Box, Button, Dialog, Flex, Text, TextArea, TextField, Heading, Card } from "@radix-ui/themes";
+import { useState, useEffect } from "react";
+import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
+import { Transaction } from "@mysten/sui/transactions";
+import { Box, Button, Dialog, Flex, Text, TextArea, Heading, Card, Spinner, Checkbox } from "@radix-ui/themes";
 import { saveApplication } from "../utils/applicationStorage";
+import { getStoredCV, type StoredCV } from "./CVUpload";
+
+// Platform commission configuration
+const PLATFORM_WALLET = "0x3671b5e095d53120b798ad1b7ed9c22be6af2c148ba674ec53b972c29378cd35";
+const APPLICATION_FEE_MIST = 1_000_000; // 0.001 SUI = 1,000,000 MIST
 
 interface ApplyModalProps {
     open: boolean;
@@ -21,41 +27,93 @@ interface ApplyModalProps {
 
 export function ApplyModal({ open, onClose, job, applicantBadge }: ApplyModalProps) {
     const account = useCurrentAccount();
-    const [formData, setFormData] = useState({
-        message: "",
-        cvBlobId: "",
-    });
+    const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+    const [formData, setFormData] = useState({ message: "" });
     const [submitted, setSubmitted] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [storedCV, setStoredCV] = useState<StoredCV | null>(null);
+    const [shareCV, setShareCV] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // Load stored CV on open
+    useEffect(() => {
+        if (open) {
+            const cv = getStoredCV();
+            setStoredCV(cv);
+            if (cv) {
+                setShareCV(true); // Default to sharing if CV exists
+            }
+        }
+    }, [open]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError(null);
 
         if (!account || !job) return;
 
-        // Save application to localStorage
-        saveApplication({
-            jobId: job.id,
-            jobTitle: job.title,
-            jobBlobId: job.blobId,
-            applicantAddress: account.address,
-            coverLetter: formData.message,
-            cvBlobId: formData.cvBlobId || undefined,
-            badgeTier: applicantBadge?.tier,
-            badgeScore: applicantBadge?.score,
-        });
+        setIsSubmitting(true);
 
-        console.log("Application saved:", {
-            job: job.id,
-            worker: account.address,
-            badge: applicantBadge?.tier,
-        });
+        try {
+            // Create transaction to send commission fee
+            const tx = new Transaction();
+            const [coin] = tx.splitCoins(tx.gas, [APPLICATION_FEE_MIST]);
+            tx.transferObjects([coin], PLATFORM_WALLET);
 
-        setSubmitted(true);
+            // Execute the transaction
+            await signAndExecute({
+                transaction: tx,
+            });
+
+            // Get AI analysis from localStorage for employer visibility
+            let aiAnalysis = undefined;
+            try {
+                const savedData = localStorage.getItem('wework_github_data');
+                if (savedData) {
+                    const parsed = JSON.parse(savedData);
+                    if (parsed.aiAnalysis) {
+                        aiAnalysis = parsed.aiAnalysis;
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to load AI analysis:', e);
+            }
+
+            // Save application to localStorage after successful payment
+            saveApplication({
+                jobId: job.id,
+                jobTitle: job.title,
+                jobBlobId: job.blobId,
+                applicantAddress: account.address,
+                coverLetter: formData.message,
+                cvBlobId: shareCV && storedCV ? storedCV.blobId : undefined,
+                badgeTier: applicantBadge?.tier,
+                badgeScore: applicantBadge?.score,
+                aiAnalysis: aiAnalysis,
+            });
+
+            console.log("Application submitted with 0.001 SUI fee:", {
+                job: job.id,
+                worker: account.address,
+                badge: applicantBadge?.tier,
+                feePaid: "0.001 SUI",
+                cvShared: shareCV && storedCV ? storedCV.blobId : "none",
+            });
+
+            setSubmitted(true);
+        } catch (err) {
+            console.error("Application submission failed:", err);
+            setError(err instanceof Error ? err.message : "Transaction failed. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleClose = () => {
         setSubmitted(false);
-        setFormData({ message: "", cvBlobId: "" });
+        setError(null);
+        setFormData({ message: "" });
+        setShareCV(false);
         onClose();
     };
 
@@ -136,17 +194,29 @@ export function ApplyModal({ open, onClose, job, applicantBadge }: ApplyModalPro
                                         </Box>
                                     </Box>
 
-                                    <Box>
-                                        <Text size="2" weight="medium" mb="1">CV Blob ID (Walrus)</Text>
-                                        <TextField.Root
-                                            placeholder="Enter your encrypted CV blob ID"
-                                            value={formData.cvBlobId}
-                                            onChange={(e) => setFormData({ ...formData, cvBlobId: e.target.value })}
-                                        />
-                                        <Text size="1" color="gray" mt="1">
-                                            💡 Upload your CV to Walrus and paste the blob ID here
-                                        </Text>
-                                    </Box>
+                                    {/* CV Share Option */}
+                                    {storedCV && (
+                                        <Card style={{
+                                            background: "linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%)",
+                                            border: "1px solid rgba(34, 197, 94, 0.3)"
+                                        }}>
+                                            <Flex gap="3" align="center">
+                                                <Checkbox
+                                                    checked={shareCV}
+                                                    onCheckedChange={(checked) => setShareCV(checked === true)}
+                                                />
+                                                <Box style={{ flex: 1 }}>
+                                                    <Flex justify="between" align="center">
+                                                        <Box>
+                                                            <Text size="2" weight="bold">📄 Share my encrypted CV</Text>
+                                                            <Text size="1" color="gray">{storedCV.fileName}</Text>
+                                                        </Box>
+                                                        <Text size="1">🔐</Text>
+                                                    </Flex>
+                                                </Box>
+                                            </Flex>
+                                        </Card>
+                                    )}
 
                                     <Box>
                                         <Text size="2" weight="medium" mb="1">Cover Message</Text>
@@ -156,18 +226,58 @@ export function ApplyModal({ open, onClose, job, applicantBadge }: ApplyModalPro
                                             onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                                             required
                                             style={{ minHeight: 120 }}
+                                            disabled={isSubmitting}
                                         />
                                     </Box>
 
+                                    {/* Application Fee Notice */}
+                                    <Card style={{
+                                        background: "linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%)",
+                                        border: "1px solid rgba(6, 182, 212, 0.3)"
+                                    }}>
+                                        <Flex justify="between" align="center">
+                                            <Flex gap="2" align="center">
+                                                <Text size="4">💎</Text>
+                                                <Box>
+                                                    <Text size="2" weight="bold">Application Fee</Text>
+                                                    <Text size="1" color="gray">Platform commission</Text>
+                                                </Box>
+                                            </Flex>
+                                            <Text size="4" weight="bold" style={{ color: "#06b6d4" }}>0.001 SUI</Text>
+                                        </Flex>
+                                    </Card>
+
+                                    {/* Error Display */}
+                                    {error && (
+                                        <Card style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)" }}>
+                                            <Flex gap="2" align="center">
+                                                <Text>⚠️</Text>
+                                                <Text size="2" color="red">{error}</Text>
+                                            </Flex>
+                                        </Card>
+                                    )}
+
                                     <Flex gap="3" mt="2" justify="end">
                                         <Dialog.Close>
-                                            <Button variant="soft" color="gray">Cancel</Button>
+                                            <Button variant="soft" color="gray" disabled={isSubmitting}>Cancel</Button>
                                         </Dialog.Close>
-                                        <Button type="submit" style={{
-                                            background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%)",
-                                            cursor: "pointer"
-                                        }}>
-                                            Submit Application
+                                        <Button
+                                            type="submit"
+                                            disabled={isSubmitting}
+                                            style={{
+                                                background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%)",
+                                                cursor: isSubmitting ? "wait" : "pointer",
+                                                opacity: isSubmitting ? 0.7 : 1
+                                            }}
+                                        >
+                                            {isSubmitting ? (
+                                                <Flex gap="2" align="center">
+                                                    <Spinner size="1" />
+                                                    <Text>Processing...</Text>
+                                                </Flex>
+                                            ) : (
+                                                "Submit Application (0.001 SUI)"
+                                            )}
                                         </Button>
                                     </Flex>
                                 </Flex>

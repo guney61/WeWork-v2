@@ -110,8 +110,8 @@ export default function AIGitHubTierAnalyzer() {
                                     borderRadius: 8,
                                     display: 'inline-flex',
                                 }}>
-                                    <Text size="4">{analysis.developerTypeEmoji}</Text>
-                                    <Text weight="bold">{analysis.developerType}</Text>
+                                    <Text size="4">{(analysis as any).developerTypeEmoji}</Text>
+                                    <Text weight="bold">{(analysis as any).developerType}</Text>
                                 </Flex>
                             )}
 
@@ -119,11 +119,11 @@ export default function AIGitHubTierAnalyzer() {
                         </Card>
 
                         {/* Languages */}
-                        {'languages' in analysis && analysis.languages.length > 0 && (
+                        {'languages' in analysis && (analysis as any).languages.length > 0 && (
                             <Card style={{ background: 'var(--gray-a2)' }}>
                                 <Heading size="3" mb="3">💻 Programming Languages</Heading>
                                 <Flex wrap="wrap" gap="2">
-                                    {analysis.languages.map((lang, i) => (
+                                    {(analysis as any).languages.map((lang: any, i: number) => (
                                         <Box key={i} style={{
                                             background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
                                             padding: '6px 12px',
@@ -148,11 +148,11 @@ export default function AIGitHubTierAnalyzer() {
                         )}
 
                         {/* Expertise */}
-                        {'expertise' in analysis && analysis.expertise.length > 0 && (
+                        {'expertise' in analysis && (analysis as any).expertise.length > 0 && (
                             <Card style={{ background: 'var(--gray-a2)' }}>
                                 <Heading size="3" mb="3">🎯 Areas of Expertise</Heading>
                                 <Flex wrap="wrap" gap="2">
-                                    {analysis.expertise.map((exp, i) => (
+                                    {(analysis as any).expertise.map((exp: string, i: number) => (
                                         <Box key={i} style={{
                                             background: 'var(--gray-a4)',
                                             padding: '4px 10px',

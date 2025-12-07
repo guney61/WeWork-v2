@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Box, Card, Container, Flex, Heading, Text, Spinner } from "@radix-ui/themes";
 import { fetchGitHubUser, fetchGitHubContributions } from "../utils/githubAuth";
 import { calculateGitHubScore, type ScoreBreakdown } from "../utils/githubScoring";
+import { aiTierService, type AITierAnalysis } from "../utils/aiTierService";
 import { AnimatedBadge } from "./ProfileBadge";
 
 interface GitHubCallbackProps {
@@ -10,12 +11,13 @@ interface GitHubCallbackProps {
         score: ScoreBreakdown;
         avatarUrl: string;
         accessToken: string;
+        aiAnalysis?: AITierAnalysis;
     }) => void;
     onError: (error: string) => void;
 }
 
 export function GitHubCallback({ onSuccess, onError }: GitHubCallbackProps) {
-    const [status, setStatus] = useState<'loading' | 'exchanging' | 'fetching' | 'scoring' | 'success' | 'error'>('loading');
+    const [status, setStatus] = useState<'loading' | 'exchanging' | 'fetching' | 'scoring' | 'analyzing' | 'success' | 'error'>('loading');
     const [error, setError] = useState<string>('');
     const [scoreData, setScoreData] = useState<ScoreBreakdown | null>(null);
     const hasRun = useRef(false); // Prevent double execution in StrictMode
@@ -78,6 +80,16 @@ export function GitHubCallback({ onSuccess, onError }: GitHubCallbackProps) {
 
             const score = calculateGitHubScore(stats);
             setScoreData(score);
+
+            // Run AI analysis
+            setStatus('analyzing');
+            let analysis: AITierAnalysis | undefined;
+            try {
+                analysis = await aiTierService.analyzeProfile(user.login);
+            } catch (aiError) {
+                console.warn('AI analysis failed, continuing without it:', aiError);
+            }
+
             setStatus('success');
 
             // Notify parent after animation
@@ -87,6 +99,7 @@ export function GitHubCallback({ onSuccess, onError }: GitHubCallbackProps) {
                     score,
                     avatarUrl: user.avatar_url,
                     accessToken: access_token,
+                    aiAnalysis: analysis,
                 });
             }, 2000);
 
@@ -137,6 +150,14 @@ export function GitHubCallback({ onSuccess, onError }: GitHubCallbackProps) {
                             <Spinner size="3" />
                             <Heading size="4">Calculating your score...</Heading>
                             <Text color="gray">Analyzing your GitHub stats</Text>
+                        </>
+                    )}
+
+                    {status === 'analyzing' && (
+                        <>
+                            <Spinner size="3" />
+                            <Heading size="4">🤖 Running AI Analysis...</Heading>
+                            <Text color="gray">Analyzing your projects and expertise</Text>
                         </>
                     )}
 

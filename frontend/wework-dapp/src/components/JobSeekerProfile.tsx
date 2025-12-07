@@ -3,8 +3,11 @@ import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Box, Card, Container, Flex, Grid, Heading, Section, Text } from "@radix-ui/themes";
 import { GitHubConnect } from "./GitHubConnect";
 import { ProfileBadge } from "./ProfileBadge";
-import AIGitHubTierAnalyzer from "../AIGitHubTierAnalyzer";
+import AIGitHubTierAnalyzer from "./AIGitHubTierAnalyzer";
+import TierBadge from "./TierBadge";
+import { CVUpload } from "./CVUpload";
 import type { ScoreBreakdown } from "../utils/githubScoring";
+import type { AITierAnalysis } from "../utils/aiTierService";
 
 interface JobSeekerProfileProps {
     onBadgeEarned?: (tier: string, score: number) => void;
@@ -12,6 +15,7 @@ interface JobSeekerProfileProps {
         username: string;
         score: ScoreBreakdown;
         avatarUrl?: string;
+        aiAnalysis?: AITierAnalysis;
     } | null;
 }
 
@@ -20,6 +24,7 @@ export function JobSeekerProfile({ onBadgeEarned, savedGithubData }: JobSeekerPr
     const [githubData, setGithubData] = useState<{
         username: string;
         score: ScoreBreakdown;
+        aiAnalysis?: AITierAnalysis;
     } | null>(null);
 
     // Initialize from saved data
@@ -140,9 +145,96 @@ export function JobSeekerProfile({ onBadgeEarned, savedGithubData }: JobSeekerPr
                         </Card>
                     </Grid>
 
-                    {/* AI GitHub Tier Analyzer */}
-                    <Box mt="6">
+                    {/* AI Analysis Results - Show if we have AI analysis from GitHub connect */}
+                    {githubData?.aiAnalysis && (
+                        <Card style={{
+                            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%)',
+                            border: '1px solid rgba(6, 182, 212, 0.3)',
+                        }}>
+                            <Flex direction="column" gap="4">
+                                <Flex align="center" gap="3">
+                                    <Box style={{
+                                        width: 40,
+                                        height: 40,
+                                        background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                                        borderRadius: 10,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        <Text size="5">🤖</Text>
+                                    </Box>
+                                    <Box>
+                                        <Heading size="4">Your AI Profile Analysis</Heading>
+                                        <Text size="1" color="gray">Automatically generated from your GitHub</Text>
+                                    </Box>
+                                    <Box style={{ marginLeft: 'auto' }}>
+                                        <TierBadge tier={githubData.aiAnalysis.tier} size="md" />
+                                    </Box>
+                                </Flex>
+
+                                {/* Developer Type */}
+                                {'developerType' in githubData.aiAnalysis && (
+                                    <Flex align="center" gap="2" style={{
+                                        background: 'var(--gray-a3)',
+                                        padding: '8px 12px',
+                                        borderRadius: 8,
+                                        display: 'inline-flex',
+                                        width: 'fit-content',
+                                    }}>
+                                        <Text size="4">{githubData.aiAnalysis.developerTypeEmoji}</Text>
+                                        <Text weight="bold">{githubData.aiAnalysis.developerType}</Text>
+                                    </Flex>
+                                )}
+
+                                <Text size="2" color="gray">{githubData.aiAnalysis.reasoning}</Text>
+
+                                {/* Languages */}
+                                {'languages' in githubData.aiAnalysis && githubData.aiAnalysis.languages.length > 0 && (
+                                    <Box>
+                                        <Text size="2" weight="bold" mb="2">💻 Programming Languages</Text>
+                                        <Flex wrap="wrap" gap="2">
+                                            {githubData.aiAnalysis.languages.slice(0, 6).map((lang: any, i: number) => (
+                                                <Box key={i} style={{
+                                                    background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                                                    padding: '4px 10px',
+                                                    borderRadius: 16,
+                                                }}>
+                                                    <Text size="1" weight="bold" style={{ color: 'white' }}>
+                                                        {lang.name} {lang.percentage}%
+                                                    </Text>
+                                                </Box>
+                                            ))}
+                                        </Flex>
+                                    </Box>
+                                )}
+
+                                {/* Strengths */}
+                                {githubData.aiAnalysis.strengths.length > 0 && (
+                                    <Box>
+                                        <Text size="2" weight="bold" style={{ color: '#22c55e' }}>✨ Key Strengths</Text>
+                                        <Flex direction="column" gap="1" mt="2">
+                                            {githubData.aiAnalysis.strengths.slice(0, 4).map((s: string, i: number) => (
+                                                <Flex key={i} gap="2">
+                                                    <Text style={{ color: '#22c55e' }}>✓</Text>
+                                                    <Text size="2">{s}</Text>
+                                                </Flex>
+                                            ))}
+                                        </Flex>
+                                    </Box>
+                                )}
+                            </Flex>
+                        </Card>
+                    )}
+
+                    {/* AI GitHub Tier Analyzer - Manual analysis */}
+                    <Box mt="4">
                         <AIGitHubTierAnalyzer />
+                    </Box>
+
+                    {/* CV Upload Section */}
+                    <Box mt="4">
+                        <CVUpload />
                     </Box>
 
                     {/* Badge Tiers Info */}

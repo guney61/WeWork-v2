@@ -244,6 +244,67 @@ export function MyJobsSection({ jobs }: MyJobsSectionProps) {
                                                 </Text>
                                             )}
 
+                                            {/* AI Analysis for Employer */}
+                                            {app.aiAnalysis && (
+                                                <Card style={{
+                                                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%)',
+                                                    border: '1px solid rgba(6, 182, 212, 0.3)',
+                                                    padding: '12px'
+                                                }}>
+                                                    <Flex direction="column" gap="2">
+                                                        <Flex justify="between" align="center">
+                                                            <Flex gap="2" align="center">
+                                                                <Text size="2">🤖</Text>
+                                                                <Text size="2" weight="bold">AI Profile Analysis</Text>
+                                                            </Flex>
+                                                            <Badge style={{
+                                                                background: app.aiAnalysis.tier === 'Diamond' ? 'linear-gradient(135deg, #06b6d4, #3b82f6)' :
+                                                                    app.aiAnalysis.tier === 'Gold' ? 'linear-gradient(135deg, #fbbf24, #f59e0b)' :
+                                                                        app.aiAnalysis.tier === 'Silver' ? 'linear-gradient(135deg, #9ca3af, #6b7280)' :
+                                                                            'linear-gradient(135deg, #d97706, #b45309)',
+                                                                color: 'white'
+                                                            }}>
+                                                                {app.aiAnalysis.tier}
+                                                            </Badge>
+                                                        </Flex>
+
+                                                        {/* Developer Type */}
+                                                        {app.aiAnalysis.developerType && (
+                                                            <Flex gap="1" align="center">
+                                                                <Text size="2">{app.aiAnalysis.developerTypeEmoji || '👨‍💻'}</Text>
+                                                                <Text size="1" weight="bold">{app.aiAnalysis.developerType}</Text>
+                                                            </Flex>
+                                                        )}
+
+                                                        {/* Languages */}
+                                                        {app.aiAnalysis.languages && app.aiAnalysis.languages.length > 0 && (
+                                                            <Flex wrap="wrap" gap="1">
+                                                                {app.aiAnalysis.languages.slice(0, 4).map((lang, i) => (
+                                                                    <Box key={i} style={{
+                                                                        background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                                                                        padding: '2px 8px',
+                                                                        borderRadius: 12,
+                                                                    }}>
+                                                                        <Text size="1" style={{ color: 'white' }}>
+                                                                            {lang.name} {lang.percentage}%
+                                                                        </Text>
+                                                                    </Box>
+                                                                ))}
+                                                            </Flex>
+                                                        )}
+
+                                                        {/* Key Strengths */}
+                                                        {app.aiAnalysis.strengths && app.aiAnalysis.strengths.length > 0 && (
+                                                            <Box>
+                                                                <Text size="1" style={{ color: '#22c55e' }}>
+                                                                    ✓ {app.aiAnalysis.strengths.slice(0, 2).join(' • ')}
+                                                                </Text>
+                                                            </Box>
+                                                        )}
+                                                    </Flex>
+                                                </Card>
+                                            )}
+
                                             {/* Applied Date */}
                                             <Text size="1" color="gray">
                                                 Applied: {new Date(app.appliedAt).toLocaleDateString()}
