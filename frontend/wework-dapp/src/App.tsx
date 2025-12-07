@@ -6,6 +6,7 @@ import { CreateJobModal } from "./components/CreateJobModal";
 import { ApplyModal } from "./components/ApplyModal";
 import { JobSeekerProfile } from "./components/JobSeekerProfile";
 import { GitHubCallback } from "./components/GitHubCallback";
+import { MyJobsSection } from "./components/MyJobsSection";
 import type { ScoreBreakdown } from "./utils/githubScoring";
 
 // Mock data for demo
@@ -69,7 +70,7 @@ function App() {
   const [showCreateJob, setShowCreateJob] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [jobs, setJobs] = useState(MOCK_JOBS);
-  const [activeTab, setActiveTab] = useState<'home' | 'jobs' | 'profile'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'jobs' | 'myjobs' | 'profile'>('home');
   // Check for callback immediately on initial render
   const [isCallback] = useState(() => hasGitHubCode());
   const [githubData, setGithubData] = useState<{
@@ -83,7 +84,7 @@ function App() {
     // Check URL params for initial tab
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab === 'profile' || tab === 'jobs' || tab === 'home') {
+    if (tab === 'profile' || tab === 'jobs' || tab === 'home' || tab === 'myjobs') {
       setActiveTab(tab);
     }
 
@@ -211,6 +212,15 @@ function App() {
           >
             Profile
           </Text>
+          <Text
+            size="2"
+            weight={activeTab === 'myjobs' ? 'bold' : 'regular'}
+            color={activeTab === 'myjobs' ? undefined : 'gray'}
+            onClick={() => setActiveTab('myjobs')}
+            style={{ cursor: "pointer" }}
+          >
+            My Jobs
+          </Text>
         </Flex>
 
         <Flex gap="3" align="center">
@@ -246,6 +256,10 @@ function App() {
             console.log(`Badge earned: ${tier} with ${score} points`);
           }}
         />
+      )}
+
+      {activeTab === 'myjobs' && (
+        <MyJobsSection jobs={jobs} />
       )}
 
       {/* Footer */}

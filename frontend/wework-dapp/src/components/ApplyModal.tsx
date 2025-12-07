@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Box, Button, Dialog, Flex, Text, TextArea, TextField, Heading, Card } from "@radix-ui/themes";
+import { saveApplication } from "../utils/applicationStorage";
 
 interface ApplyModalProps {
     open: boolean;
@@ -10,10 +11,15 @@ interface ApplyModalProps {
         title: string;
         company: string;
         budget: number;
+        blobId?: string;
     } | null;
+    applicantBadge?: {
+        tier: 'bronze' | 'silver' | 'gold' | 'diamond';
+        score: number;
+    };
 }
 
-export function ApplyModal({ open, onClose, job }: ApplyModalProps) {
+export function ApplyModal({ open, onClose, job, applicantBadge }: ApplyModalProps) {
     const account = useCurrentAccount();
     const [formData, setFormData] = useState({
         message: "",
@@ -23,11 +29,27 @@ export function ApplyModal({ open, onClose, job }: ApplyModalProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Application submitted:", {
-            job: job?.id,
-            worker: account?.address,
-            ...formData,
+
+        if (!account || !job) return;
+
+        // Save application to localStorage
+        saveApplication({
+            jobId: job.id,
+            jobTitle: job.title,
+            jobBlobId: job.blobId,
+            applicantAddress: account.address,
+            coverLetter: formData.message,
+            cvBlobId: formData.cvBlobId || undefined,
+            badgeTier: applicantBadge?.tier,
+            badgeScore: applicantBadge?.score,
         });
+
+        console.log("Application saved:", {
+            job: job.id,
+            worker: account.address,
+            badge: applicantBadge?.tier,
+        });
+
         setSubmitted(true);
     };
 
