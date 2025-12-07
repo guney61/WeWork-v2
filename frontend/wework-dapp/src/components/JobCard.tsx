@@ -1,4 +1,4 @@
-import { Badge, Box, Card, Flex, Heading, Text, Button } from "@radix-ui/themes";
+import { Badge, Box, Card, Flex, Heading, Text, Button, Tooltip } from "@radix-ui/themes";
 
 interface JobCardProps {
     job: {
@@ -10,11 +10,15 @@ interface JobCardProps {
         is_active: boolean;
         company: string;
         tags: string[];
+        blobId?: string;
+        expiresAt?: string;
     };
     onApply: () => void;
 }
 
 export function JobCard({ job, onApply }: JobCardProps) {
+    const isWalrusStored = !!job.blobId;
+
     return (
         <Card
             style={{
@@ -50,11 +54,20 @@ export function JobCard({ job, onApply }: JobCardProps) {
                             <Text size="1" color="gray">{job.employer.slice(0, 6)}...{job.employer.slice(-4)}</Text>
                         </Box>
                     </Flex>
-                    {job.is_active && (
-                        <Badge color="green" variant="soft" radius="full">
-                            Active
-                        </Badge>
-                    )}
+                    <Flex gap="2" align="center">
+                        {isWalrusStored && (
+                            <Tooltip content={`Stored on Walrus: ${job.blobId?.slice(0, 12)}...`}>
+                                <Badge color="cyan" variant="soft" radius="full">
+                                    🦭 Walrus
+                                </Badge>
+                            </Tooltip>
+                        )}
+                        {job.is_active && (
+                            <Badge color="green" variant="soft" radius="full">
+                                Active
+                            </Badge>
+                        )}
+                    </Flex>
                 </Flex>
 
                 {/* Title & Description */}
