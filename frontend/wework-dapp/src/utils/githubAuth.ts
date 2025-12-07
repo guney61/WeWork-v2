@@ -5,8 +5,12 @@
 // Set callback URL to: http://localhost:5173/api/auth/github/callback
 
 export const GITHUB_CONFIG = {
-    clientId: import.meta.env.VITE_GITHUB_CLIENT_ID || 'Ov23liKYLdv73mijMQ5X',
-    redirectUri: 'http://localhost:5173/api/auth/github/callback',
+    clientId: import.meta.env.VITE_GITHUB_CLIENT_ID || 'Ov23liRLW0zztHry8SBm',
+    // Use dynamic origin to handle different ports
+    get redirectUri() {
+        const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+        return `${origin}/api/auth/github/callback`;
+    },
     scope: 'read:user',
 };
 

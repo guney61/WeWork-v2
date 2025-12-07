@@ -33,8 +33,8 @@ export function githubAuthPlugin(clientSecret: string) {
                                         'Content-Type': 'application/json',
                                     },
                                     body: JSON.stringify({
-                                        client_id: 'Ov23liKYLdv73mijMQ5X',
-                                        client_secret: '04795caddacafe1a21160db6d67e019b8dd8abea',
+                                        client_id: 'Ov23liRLW0zztHry8SBm',
+                                        client_secret: 'a1c856860f7792b1d76cde25ab05f2f9da42791f',
                                         code: code,
                                     }),
                                 });
