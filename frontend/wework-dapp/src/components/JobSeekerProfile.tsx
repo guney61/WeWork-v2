@@ -3,6 +3,7 @@ import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Box, Card, Container, Flex, Grid, Heading, Section, Text } from "@radix-ui/themes";
 import { GitHubConnect } from "./GitHubConnect";
 import { ProfileBadge } from "./ProfileBadge";
+import AIGitHubTierAnalyzer from "../AIGitHubTierAnalyzer";
 import type { ScoreBreakdown } from "../utils/githubScoring";
 
 interface JobSeekerProfileProps {
@@ -138,6 +139,11 @@ export function JobSeekerProfile({ onBadgeEarned, savedGithubData }: JobSeekerPr
                             </Flex>
                         </Card>
                     </Grid>
+
+                    {/* AI GitHub Tier Analyzer */}
+                    <Box mt="6">
+                        <AIGitHubTierAnalyzer />
+                    </Box>
 
                     {/* Badge Tiers Info */}
                     <Card mt="4" style={{ background: 'var(--gray-a2)' }}>
