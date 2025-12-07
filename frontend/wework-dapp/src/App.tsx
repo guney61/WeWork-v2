@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit";
 import { Box, Container, Flex, Heading, Text, Button } from "@radix-ui/themes";
 import { HeroSection, JobsSection } from "./components/Sections";
 import { CreateJobModal } from "./components/CreateJobModal";
 import { ApplyModal } from "./components/ApplyModal";
+import { JobSeekerProfile } from "./components/JobSeekerProfile";
+import { GitHubCallback } from "./components/GitHubCallback";
+import type { ScoreBreakdown } from "./utils/githubScoring";
 
 // Mock data for demo
 const MOCK_JOBS = [
@@ -51,16 +54,91 @@ const MOCK_JOBS = [
 
 type Job = typeof MOCK_JOBS[0];
 
+// Check if we have a GitHub OAuth code in URL (means we're on callback)
+function hasGitHubCode(): boolean {
+  const params = new URLSearchParams(window.location.search);
+  return params.has('code') && (
+    window.location.pathname.includes('callback') ||
+    window.location.pathname === '/' ||
+    window.location.pathname.includes('auth')
+  );
+}
+
 function App() {
   const account = useCurrentAccount();
   const [showCreateJob, setShowCreateJob] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [jobs, setJobs] = useState(MOCK_JOBS);
+  const [activeTab, setActiveTab] = useState<'home' | 'jobs' | 'profile'>('home');
+  // Check for callback immediately on initial render
+  const [isCallback] = useState(() => hasGitHubCode());
+  const [githubData, setGithubData] = useState<{
+    username: string;
+    score: ScoreBreakdown;
+    avatarUrl: string;
+  } | null>(null);
+
+  // Load saved data and check URL params on mount
+  useEffect(() => {
+    // Check URL params for initial tab
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab === 'profile' || tab === 'jobs' || tab === 'home') {
+      setActiveTab(tab);
+    }
+
+    // Load saved GitHub data from localStorage
+    const saved = localStorage.getItem('wework_github_data');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        setGithubData(data);
+        console.log('Loaded GitHub data from localStorage:', data);
+      } catch (e) {
+        console.error('Failed to parse saved GitHub data');
+      }
+    }
+  }, []);
 
   const handleCreateJob = (newJob: Job) => {
     setJobs([newJob, ...jobs]);
     setShowCreateJob(false);
   };
+
+  const handleGitHubSuccess = (data: {
+    username: string;
+    score: ScoreBreakdown;
+    avatarUrl: string;
+    accessToken: string;
+  }) => {
+    // Save to state and localStorage
+    const saveData = {
+      username: data.username,
+      score: data.score,
+      avatarUrl: data.avatarUrl,
+    };
+    setGithubData(saveData);
+    localStorage.setItem('wework_github_data', JSON.stringify(saveData));
+
+    // Redirect back to profile page
+    window.location.href = '/?tab=profile';
+  };
+
+  const handleGitHubError = (error: string) => {
+    console.error('GitHub OAuth error:', error);
+    // Redirect back with error
+    window.location.href = '/?error=' + encodeURIComponent(error);
+  };
+
+  // If on callback route, show callback handler
+  if (isCallback) {
+    return (
+      <GitHubCallback
+        onSuccess={handleGitHubSuccess}
+        onError={handleGitHubError}
+      />
+    );
+  }
 
   return (
     <>
@@ -76,6 +154,7 @@ function App() {
           background: "rgba(0, 0, 0, 0.5)",
           backdropFilter: "blur(20px)",
           zIndex: 100,
+          top: 0,
         }}
       >
         <Flex gap="3" align="center">
@@ -103,10 +182,35 @@ function App() {
           </Heading>
         </Flex>
 
-        <Flex gap="6" align="center" style={{ display: "none" }} className="nav-links">
-          <Text size="2" color="gray" style={{ cursor: "pointer" }}>Jobs</Text>
-          <Text size="2" color="gray" style={{ cursor: "pointer" }}>Developers</Text>
-          <Text size="2" color="gray" style={{ cursor: "pointer" }}>Badges</Text>
+        {/* Navigation Tabs */}
+        <Flex gap="6" align="center">
+          <Text
+            size="2"
+            weight={activeTab === 'home' ? 'bold' : 'regular'}
+            color={activeTab === 'home' ? undefined : 'gray'}
+            onClick={() => setActiveTab('home')}
+            style={{ cursor: "pointer" }}
+          >
+            Home
+          </Text>
+          <Text
+            size="2"
+            weight={activeTab === 'jobs' ? 'bold' : 'regular'}
+            color={activeTab === 'jobs' ? undefined : 'gray'}
+            onClick={() => setActiveTab('jobs')}
+            style={{ cursor: "pointer" }}
+          >
+            Jobs
+          </Text>
+          <Text
+            size="2"
+            weight={activeTab === 'profile' ? 'bold' : 'regular'}
+            color={activeTab === 'profile' ? undefined : 'gray'}
+            onClick={() => setActiveTab('profile')}
+            style={{ cursor: "pointer" }}
+          >
+            Profile
+          </Text>
         </Flex>
 
         <Flex gap="3" align="center">
@@ -123,11 +227,26 @@ function App() {
         </Flex>
       </Flex>
 
-      {/* Hero Section */}
-      <HeroSection onPostJob={() => setShowCreateJob(true)} />
+      {/* Content based on active tab */}
+      {activeTab === 'home' && (
+        <>
+          <HeroSection onPostJob={() => setShowCreateJob(true)} onBrowseJobs={() => setActiveTab('jobs')} />
+          <JobsSection jobs={jobs} onApply={(job) => setSelectedJob(job)} />
+        </>
+      )}
 
-      {/* Jobs Section */}
-      <JobsSection jobs={jobs} onApply={(job) => setSelectedJob(job)} />
+      {activeTab === 'jobs' && (
+        <JobsSection jobs={jobs} onApply={(job) => setSelectedJob(job)} />
+      )}
+
+      {activeTab === 'profile' && (
+        <JobSeekerProfile
+          savedGithubData={githubData}
+          onBadgeEarned={(tier, score) => {
+            console.log(`Badge earned: ${tier} with ${score} points`);
+          }}
+        />
+      )}
 
       {/* Footer */}
       <Box

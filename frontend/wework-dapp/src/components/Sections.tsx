@@ -14,9 +14,10 @@ interface Job {
 
 interface HeroSectionProps {
     onPostJob: () => void;
+    onBrowseJobs: () => void;
 }
 
-export function HeroSection({ onPostJob }: HeroSectionProps) {
+export function HeroSection({ onPostJob, onBrowseJobs }: HeroSectionProps) {
     return (
         <Section
             size="3"
@@ -65,7 +66,7 @@ export function HeroSection({ onPostJob }: HeroSectionProps) {
                         }}>
                             🚀 Post a Job
                         </Button>
-                        <Button size="3" variant="outline" style={{ cursor: "pointer" }}>
+                        <Button size="3" variant="outline" onClick={onBrowseJobs} style={{ cursor: "pointer" }}>
                             💼 Browse Jobs
                         </Button>
                     </Flex>
